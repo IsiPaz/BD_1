@@ -1,7 +1,27 @@
 import pyodbc
 import random
 import csv
+import datetime
 
+#FUNCIONES_AUX --------------------------------
+
+# Transforma el booleano de legendario en 1 o 0
+def boolean_to_int(legendary):
+    if legendary=="True":
+        return 1
+    else:
+        return 0
+
+def random_state():
+    states = ["Envenenado", "Paralizado", "Quemado", "Dormido","Congelado","None"]
+    state = random.choice(states)
+    return state
+
+def check_in_pkm():
+    time = datetime.datetime.today()
+    return time
+
+#BORRAR --------------------------------
 
 # Borra la tabla POYO
 def delete_POYO(conn):
@@ -10,13 +30,14 @@ def delete_POYO(conn):
         "DROP TABLE POYO")
     cur.commit()
 
-
 # Borra la tabla SANSANITO
 def delete_SANSANITO_POKE(conn):
     cur = conn.cursor()
     cur.execute(
         "DROP TABLE SANSANITOPOKEMON")
     cur.commit()
+
+#CREAR TABLAS --------------------------------
 
 # Crea la tabla poyo
 def create_POYO(conn):
@@ -35,6 +56,20 @@ def create_POYO(conn):
     cur.commit()
 
 
+# Busca en POYO segun el nombre del pkm
+def Search_POYO(conn, name):
+    cur = conn.cursor()
+    cur.execute(
+        f"""
+        SELECT * FROM POYO WHERE POKEMON_NAME = {name};
+        """
+    )
+    cur.commit()
+    for x in cur:
+        print(x)
+        return x
+
+
 # Crea la tabla SANSANITO POKEMON
 def create_SANSANITO_POKE(conn):
     cur = conn.cursor()
@@ -50,19 +85,13 @@ def create_SANSANITO_POKE(conn):
             HP_MAX INTEGER NOT NULL,
             LEGENDARY INTEGER,
             STATE VARCHAR2(20),
-            CHECKIN DATE,
+            CHECKIN TIMESTAMP,
             PRIORITY INTEGER);
         """
         )
     cur.commit()
 
 
-
-def boolean_to_int(legendary):
-    if legendary=="True":
-        return 1
-    else:
-        return 0
 
 
 
@@ -96,9 +125,86 @@ def Complete_table_POYO(conn):
                 cur.commit()
 
 
+
+def Create(conn):
+    cur = conn.cursor()
+    pkm_name = input("\nNombre del Pokémon que desea ingresar: ")
+    pkm_name1 = "'"+pkm_name+"'"
+    row = Search_POYO(conn,pkm_name1)
+    id_pokedex = row[0]
+    id_pokedex1 = str(id_pokedex)
+    type1 = row[2]
+    type2 = row[3]
+    hp_max = row[4]
+    legendary = row[5]
+    date_checkin = check_in_pkm()
+    #print(id_pokedex,type1,type2,hp_max,legendary)
+    hp_act = input("\nIngrese HP actual del Pokemon, debe ser menor a "+str(hp_max)+": ")
+    prio = hp_max - int(hp_act)
+    print("\nSeleccione el estado de su Pokémon: ")
+    for s in ["1-Envenenado", "2-Paralizado", "3-Quemado", "4-Dormido","5-Congelado","6-None"]:
+        print(s)
+    state = int(input())
+    if state == 1 :
+        state = "Envenenado"
+        prio = prio+10
+    elif state == 2 :
+        state = "Paralizado"
+        prio = prio+10
+    elif state == 3 :
+        state = "Quemado"
+        prio = prio+10
+    elif state == 4 :
+        state = "Dormido"
+        prio = prio+10
+    elif state == 5 : 
+        state = "Congelado"
+        prio = prio+10
+    else :
+        state = "None"
+    print("\nDesea ingresar a "+pkm_name+" ? S/N")
+    print("N Pokedex "+id_pokedex1)
+    print("Tipo 1 "+type1)
+    print("Tipo 2 "+type2)
+    print("HP Act "+str(hp_act))
+    print("HP Max "+str(hp_max))
+    print("Legendario " +str(legendary))
+    print("Estado" +state)
+    print("Checkin "+str(date_checkin))
+    print("Prioridad "+str(prio))
+    flag = str(input())
+    if flag == "S":
+        print("Pokémon Ingresado con éxito!")
+    else:
+        return
+
+    
+
+
+
+
+
+
+    
+
+
+
+
+
+
 connect_string = "DRIVER={Oracle en OraDB18Home3};DBQ=localhost:1521;Uid=SYSTEM;Pwd=Base1234"
 
 # Connect string format: [username]/[password]@//[hostname]:[port]/[DB service name]
 conn = pyodbc.connect(connect_string)
 
-Complete_table_POYO(conn)
+
+#create_POYO(conn)
+#Complete_table_POYO(conn)
+
+#print(random_date())
+#print(random_state())
+
+#Priority(conn, "'Charmander'", 25)
+
+#Search_POYO(conn,"'Pikachu'")
+Create(conn)
