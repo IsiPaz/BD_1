@@ -163,18 +163,28 @@ def Create(conn):
     else :
         state = "None"
     print("\nDesea ingresar a "+pkm_name+" ? S/N")
-    print("N Pokedex "+id_pokedex1)
-    print("Tipo 1 "+type1)
-    print("Tipo 2 "+type2)
-    print("HP Act "+str(hp_act))
-    print("HP Max "+str(hp_max))
-    print("Legendario " +str(legendary))
-    print("Estado" +state)
-    print("Checkin "+str(date_checkin))
-    print("Prioridad "+str(prio))
+    print("N° Pokedex: "+id_pokedex1)
+    print("Tipo 1: "+type1)
+    print("Tipo 2: "+str(type2))
+    print("HP Act: "+str(hp_act))
+    print("HP Max: "+str(hp_max))
+    print("Legendario: " +str(legendary))
+    print("Estado: " +state)
+    print("Checkin: "+str(date_checkin))
+    print("Prioridad: "+str(prio))
     flag = str(input())
+    idd = 1
     if flag == "S":
+        cur.execute(
+            f"""
+                INSERT INTO SANSANITOPOKEMON(ID, N_POKEDEX, NAME, TYPE1, 
+                TYPE2, HP_ACT, HP_MAX, LEGENDARY, STATE, CHECKIN, PRIORITY)
+                VALUES ('{idd}','{id_pokedex}','{pkm_name}','{type1}','{type2}','{hp_act}',
+                '{hp_max}','{legendary}','{state}',LOCALTIMESTAMP,'{prio}');
+            """)
+        cur.commit()
         print("Pokémon Ingresado con éxito!")
+        
     else:
         return
 
@@ -199,6 +209,8 @@ conn = pyodbc.connect(connect_string)
 
 
 #create_POYO(conn)
+#create_SANSANITO_POKE(conn)
+
 #Complete_table_POYO(conn)
 
 #print(random_date())
