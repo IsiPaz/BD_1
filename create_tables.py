@@ -3,17 +3,31 @@ import random
 import csv
 import datetime
 
+
+# SEQUENCE ---------------------------------
+
+# Sequence ID
+def Create_sequenceID(conn):
+    cur = conn.cursor()
+    cur.execute("CREATE SEQUENCE SERIE_ID START WITH 1 INCREMENT BY 1;")
+    cur.commit()
+
+def DeleteSequence(conn):
+    cur = conn.cursor()
+    cur.execute("DROP SEQUENCE SERIE_ID;")
+    cur.commit()
+
 # TRIGGERS ---------------------------------
 
 # Trigger ID tabla SANSANITO
 def IdSANSANITO(conn):
     cur = conn.cursor()
-    cur.execute("CREATE SEQUENCE SERIE_ID START WITH 1;")
-    cur.execute(
+    cur.execute( 
         """
             CREATE OR REPLACE TRIGGER SERIE_ID_SANSANO
             BEFORE INSERT ON SANSANITOPOKEMON
-            FOR EACH ROW BEGIN
+            FOR EACH ROW 
+            BEGIN
                 SELECT SERIE_ID.NEXTVAL
                 INTO :new.ID
                 FROM dual;
@@ -22,7 +36,7 @@ def IdSANSANITO(conn):
     )
     cur.commit()
 
-def DeleteSequence(conn):
+def DeleteTrigger(conn):
     cur = conn.cursor()
     cur.execute("DROP TRIGGER SERIE_ID_SANSANO;")
     cur.commit()
@@ -41,7 +55,15 @@ def check_in_pkm():
     time = datetime.datetime.today()
     return time
 
-# Entrega la nueva prioridad cuando se updatea el hp actual
+# Retorna la prioridad
+def Priority_no_update(hp_act, hp_max, state):
+    if state != "None" :
+        new_prio = hp_max - hp_act + 10
+    else:
+        new_prio = hp_max - hp_act
+    return new_prio
+
+# Entrega la nueva prioridad cuando se updatea el hp actual en Sansanito
 def Priority(conn,id_p,hp_act):
     cur = conn.cursor()
     cur.execute(
@@ -52,12 +74,8 @@ def Priority(conn,id_p,hp_act):
     for x in cur:
         hp_max = x[0]
         state = x[1]
-        if state != 'None' :
-            new_prio = hp_max - hp_act + 10
-        else:
-            new_prio = hp_max - hp_act
-        #print(new_prio)
-    return new_prio
+        prio = Priority_no_update(hp_act,hp_max,state)
+        return prio
 
 # Entrega la nueva prioridad cuando se update el estado
 def Priority_state(conn,id_p,state):
@@ -91,7 +109,7 @@ def Search_POYO(conn, name):
         return x
     
 
-# BORRAR -------------------------------------
+# BORRAR TABLAS -------------------------------------
 
 # Borra la tabla POYO
 def delete_POYO(conn):
@@ -110,7 +128,7 @@ def delete_SANSANITO_POKE(conn):
 # CREAR TABLAS --------------------------------
 
 # Crea la tabla poyo
-def create_POYO(conn):
+def Create_POYO(conn):
     cur = conn.cursor()
     cur.execute(
         """
@@ -126,7 +144,7 @@ def create_POYO(conn):
     cur.commit()
 
 # Crea la tabla SANSANITO POKEMON
-def create_SANSANITO_POKE(conn):
+def Create_SANSANITO_POKE(conn):
     cur = conn.cursor()
     cur.execute(
         """
@@ -146,6 +164,29 @@ def create_SANSANITO_POKE(conn):
         )
     cur.commit()
 
+# PRIMARY KEY constraint -----------------------------
+
+# Define la PK en SANSANITO
+def PK_Sansanito(conn):
+    cur = conn.cursor()
+    cur.execute(
+        """
+        ALTER TABLE SANSANITOPOKEMON
+        ADD CONSTRAINT sansa_pk PRIMARY KEY (ID);
+        """
+    )
+    cur.commit()
+
+# Define la PK en POYO
+def PK_Poyo(conn):
+    cur = conn.cursor()
+    cur.execute(
+        """
+        ALTER TABLE POYO
+        ADD CONSTRAINT poyo_pk PRIMARY KEY (POKEMON_NAME);
+        """
+    )
+    cur.commit()
 
 #COMPLETAR TABLA  -----------------------------
 
@@ -179,6 +220,48 @@ def Complete_table_POYO(conn):
                     )
                 cur.commit()
 
+def Complete_table_SANSA(conn):
+    cur = conn.cursor()
+    cant = int(input("Ingrese la cantidad de Pokemons a agregar: "))
+    status = ["Envenenado", "Paralizado", "Quemado", "Dormido","Congelado","None"]
+    if cant > 50:
+        print("Lo sentimos, la base de datos no puede soportar tantos elementos.")
+    else:
+        while cant > 0:
+            n = random.randint(0, 721)
+            i = 0
+            dic = {}
+            cur.execute(
+                f"""
+                SELECT * FROM POYO WHERE POKEDEX_ID = '{n}'
+                """
+            )
+            for row in cur:
+                lista = [int(row[0]),row[1],row[2],row[3],int(row[4]),int(row[5])]
+                dic[i] = lista
+                i = i + 1
+            i = random.randint(0, i-1)
+            lista = dic.get(i)        
+            id_pokedex = lista[0]
+            pkm_name = lista[1]
+            type1 = lista[2]
+            type2 = lista[3]
+            hp_max = lista[4]
+            hp_act = random.randint(0,hp_max)
+            legendary = lista[5]
+            state = random.choice(status)
+            prio = Priority_no_update(hp_act, hp_max, state)
+            cur.execute(
+                f"""
+                    INSERT INTO SANSANITOPOKEMON( N_POKEDEX, NAME, TYPE1, 
+                    TYPE2, HP_ACT, HP_MAX, LEGENDARY, STATE, CHECKIN, PRIORITY)
+                    VALUES ('{id_pokedex}','{pkm_name}','{type1}','{type2}','{hp_act}',
+                    '{hp_max}','{legendary}','{state}',LOCALTIMESTAMP,'{prio}');
+                """
+            )
+            cur.commit()
+            cant = cant - 1
+        print("Listo")
 
 #CRUD ----------------------------------------
 
@@ -371,17 +454,22 @@ def Delete(conn):
             print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
             print("   Pokémon eliminado de la base de datos con éxito!")
             print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+            return
         else :
             print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
             print("   Operación cancelada")
             print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
-    else: 
+            return
+    elif c == 2: 
             cur.execute(f"DELETE FROM SANSANITOPOKEMON;")
             cur.commit()
             print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
             print("   Se ha eliminado todos los registros de la base de datos.")
             print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
-
+            return
+    else :
+        print("retorna al menu principal")
+        return
 
 #VIEWS ----------------------------------------
 
@@ -441,7 +529,6 @@ def View_all_state(conn,state):
         """
     )
 
-
 # 
 def View_all_pkm_prio(conn):
     cur = conn.cursor()
@@ -453,6 +540,21 @@ def View_all_pkm_prio(conn):
         """
     )
     cur.commit()
+
+
+def Most_popular_pkm(conn):
+    cur = conn.cursor()
+    cur.execute(
+        f"""
+        SELECT * FROM (SELECT NAME, COUNT( NAME ) AS total FROM SANSANITOPOKEMON GROUP BY NAME ORDER BY total DESC) WHERE ROWNUM <= 1;
+        """
+    )
+    cur.commit()
+    for row in cur:
+        name = row[0]
+        print (name)
+    
+
 
 #┏━━━━━━━━━━━━━━━┓
 
@@ -474,25 +576,42 @@ connect_string = "DRIVER={Oracle en OraDB18Home3};DBQ=localhost:1521;Uid=SYSTEM;
 conn = pyodbc.connect(connect_string)
 
 #delete_SANSANITO_POKE(conn)
-#create_POYO(conn)
-#create_SANSANITO_POKE(conn)
+#Create_POYO(conn)
+
+#Create_sequenceID(conn)
 
 #Complete_table_POYO(conn)
 
+#CREATE POYO
+""" Create_POYO(conn)
+PK_Poyo(conn)
+Complete_table_POYO(conn) """
 
 
-#DeleteSequence(conn)
-#IdSANSANITO(conn)
+#CREATE SANSANITO
+
+""" Create_SANSANITO_POKE(conn)
+PK_Sansanito(conn)
+Create_sequenceID(conn)
+IdSANSANITO(conn)
+print("Todo creado") """
+#Complete_table_SANSA(conn)
+
+#VIEWS
+
+""" View_oldest_pkm(conn)
+View_top_ten_highest(conn)
+View_top_ten_lowest(conn)
+View_all_legendary(conn)
+View_all_state(conn,"Paralizado")
+View_all_pkm_prio(conn) """
+
+Most_popular_pkm(conn)
+
+
+#CRUD
+#Delete(conn)
 #Create(conn)
+#Update(conn)
 #Read(conn)
 #Delete(conn)
-
-#View_oldest_pkm(conn)
-#View_top_ten_highest(conn)
-#View_top_ten_lowest(conn)
-#View_all_legendary(conn)
-#View_all_state(conn,"Quemado")
-View_all_pkm_prio(conn)
-#Priority(conn,2,20)
-
-#Update(conn)
