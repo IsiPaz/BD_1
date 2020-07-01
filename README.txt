@@ -24,6 +24,10 @@ Para correr el archivo **create_tables.py** es necesario instalar :
 
 Es necesario tener en consideración algunos puntos que se asumieron para realizar alguna de las funcionalidades y no son detallados en el **.pdf** .
 
+### Llenado de la tabla Sansanito
+
+La tabla Sansanito se llena aleatoriamente a partir de un input entregado por el usuario, esto es para facilitar el testeo del programa y una inserción rápida.
+
 ### CRUD
 
 - Para la función **Create**, al usuario solo se le solicita ingresar información que no se encuentra en la tabla POYO, a excepción del nombre, es decir, hp actual y estado del Pokémon.
