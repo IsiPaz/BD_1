@@ -684,6 +684,16 @@ def View_oldest_pkm(conn):
     )
     cur.commit()
 
+# Elimina vista oldest_pkm
+def Delete_view_oldest_pkm(conn):
+    cur = conn.cursor()
+    cur.execute(
+        """
+            DROP VIEW oldest_pkm ;
+        """
+    )
+    cur.commit()
+
 # Vista de los 10 PKM con mayor prioridad
 def View_top_ten_highest(conn):
     cur = conn.cursor()
@@ -692,6 +702,16 @@ def View_top_ten_highest(conn):
             CREATE OR REPLACE VIEW top_ten_h AS
                 SELECT * FROM (SELECT * FROM SANSANITOPokémon ORDER BY PRIORITY DESC) WHERE ROWNUM <= 10
                 WITH READ ONLY;
+        """
+    )
+    cur.commit()
+
+# Elimina vista top_ten_h
+def Delete_top_ten_highest(conn):
+    cur = conn.cursor()
+    cur.execute(
+        """
+            DROP VIEW top_ten_h ;
         """
     )
     cur.commit()
@@ -708,6 +728,16 @@ def View_top_ten_lowest(conn):
     )
     cur.commit()
 
+# Elimina vista top_ten_l
+def Delete_top_ten_lowest(conn):
+    cur = conn.cursor()
+    cur.execute(
+        """
+            DROP VIEW top_ten_l ;
+        """
+    )
+    cur.commit()
+
 # Vista de los PKM legendarios
 def View_all_legendary(conn):
     cur = conn.cursor()
@@ -718,6 +748,16 @@ def View_all_legendary(conn):
             WITH READ ONLY;
         """
     )
+
+# Elimina vista all_legendary
+def Delete_all_legendary(conn):
+    cur = conn.cursor()
+    cur.execute(
+        """
+            DROP VIEW all_legendary ;
+        """
+    )
+    cur.commit()
 
 # Vista de los PKM según un estado especifico
 def View_all_state(conn,state):
@@ -730,6 +770,16 @@ def View_all_state(conn,state):
         """
     )
 
+# Elimina vista all_state
+def Delete_all_state(conn):
+    cur = conn.cursor()
+    cur.execute(
+        """
+            DROP VIEW all_state ;
+        """
+    )
+    cur.commit()
+
 # Vista de todos los PKM ordenados por prioridad
 def View_all_pkm_prio(conn):
     cur = conn.cursor()
@@ -738,6 +788,16 @@ def View_all_pkm_prio(conn):
             CREATE OR REPLACE VIEW all_prio AS
                 SELECT * FROM (SELECT NAME, HP_ACT, HP_MAX, PRIORITY FROM SANSANITOPokémon ORDER BY PRIORITY DESC) 
                 WITH READ ONLY;
+        """
+    )
+    cur.commit()
+
+# Elimina vista all_prio
+def Delete_all_prio(conn):
+    cur = conn.cursor()
+    cur.execute(
+        """
+            DROP VIEW all_prio ;
         """
     )
     cur.commit()
@@ -777,9 +837,17 @@ def Ingresar(conn):
             Create(conn,name)
         else : 
             print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-            print("   La capacidad esta al máximo, no se puede ingresar el Pokémon")
+            print("   La capacidad esta al máximo, se intercambiara el Pokémon")
+            print("   por uno de menor prioridad")
             print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
             input()
+            print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+            print("   Escriba el nombre del Pokémon que desea ingresar")
+            print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+            name = input()
+            Create(conn,name)
+            id0, prio = Last_one_pkm(conn)
+            Swap_normal(conn, name, id0, prio)
             return
     elif o == 2 :
         cap = Count(conn)
@@ -833,7 +901,16 @@ connect_string = "DRIVER={Oracle en OraDB18Home3};DBQ=localhost:1521;Uid=SYSTEM;
 conn = pyodbc.connect(connect_string)
 cur = conn.cursor()
 
-
+""" DeleteTrigger(conn)
+DeleteSequence(conn)
+Delete_POYO(conn)
+Delete_SANSANITO_POKE(conn)
+Delete_view_oldest_pkm(conn)
+Delete_top_ten_highest(conn)
+Delete_top_ten_lowest(conn)
+Delete_all_legendary(conn)
+Delete_all_state(conn)
+Delete_all_prio(conn) """
 
 print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
 print("   Bienvenido!")
@@ -868,7 +945,7 @@ print("┏━━━━━━━━━━━━━━━━━━━━━━━�
 print("   Se necesita llenar la tabla Sansanito Pokémon")
 print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
 c = Count(conn)
-print ("capacidad " +str(c))
+#print ("capacidad " +str(c))
 Complete_table_SANSA(conn)
 input()   
 a = 0
@@ -904,6 +981,7 @@ while a < 1:
     elif option == 2 :
         print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
         print("   Los 10 Pokémon con mayor prioridad son :")
+        print(" ")
         cur.execute(
             """
             SELECT * FROM top_ten_h;
@@ -1140,4 +1218,5 @@ while a < 1:
         print("   Opción invalida ")
         print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
         input()
+
 
